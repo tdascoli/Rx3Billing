@@ -41,4 +41,8 @@ class PurchaseListener implements PurchasesUpdatedListener {
             emitter.onError(new PurchaseFailureException(billingResult.getResponseCode()));
         }
     }
+
+    public void dispose(){
+        disposable.clear();
+    }
 }

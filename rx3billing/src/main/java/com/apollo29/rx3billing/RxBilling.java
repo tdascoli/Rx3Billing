@@ -20,39 +20,43 @@ import java.util.List;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 public class RxBilling {
 
     private Activity activity;
     private BillingClient client;
     private final PurchaseListener purchaseListener = new PurchaseListener();
+    private final CompositeDisposable disposable = new CompositeDisposable();
 
     public RxBilling set(Activity activity) {
         this.activity = activity;
-        client = BillingClient.newBuilder(activity).setListener(purchaseListener).build();
+        client = BillingClient.newBuilder(activity)
+                .enablePendingPurchases()
+                .setListener(purchaseListener)
+                .build();
         return this;
     }
 
     public Single<List<Purchase>> purchase(SkuDetails skuDetails) {
         return Single.create(emitter ->
-            tryConnect().subscribe(
+            disposable.add(tryConnect().subscribe(
                 () -> {
                     purchaseListener.setPurchaseEmitter(emitter);
-                    BillingFlowParams params = BillingFlowParams.newBuilder()
-                        .setSkuDetails(skuDetails)
-                        //.setType(billingType)
-                        //.setOldSkus(oldSkus)
-                        .build();
+                    BillingFlowParams params = BillingFlowParams
+                            .newBuilder()
+                            .setSkuDetails(skuDetails)
+                            .build();
                     client.launchBillingFlow(activity, params);
                 },
                 emitter::onError
             )
-        );
+        ));
     }
 
     public Single<List<Purchase>> queryPurchases() {
         return Single.create(emitter ->
-            tryConnect().subscribe(
+            disposable.add(tryConnect().subscribe(
                 () -> {
                     Purchase.PurchasesResult result = client.queryPurchases(BillingClient.SkuType.INAPP);
 
@@ -72,12 +76,12 @@ public class RxBilling {
                 },
                 emitter::onError
             )
-        );
+        ));
     }
 
     public Single<List<SkuDetails>> getSkuDetails(List<String> skuList) {
         return Single.create(emitter ->
-            tryConnect().subscribe(
+            disposable.add(tryConnect().subscribe(
                 () -> {
                     SkuDetailsParams params = SkuDetailsParams.newBuilder()
                         .setSkusList(skuList)
@@ -94,12 +98,12 @@ public class RxBilling {
                 },
                 emitter::onError
             )
-        );
+        ));
     }
 
     public Single<String> consume(ConsumeParams params) {
         return Single.create(emitter ->
-            tryConnect().subscribe(
+            disposable.add(tryConnect().subscribe(
                 () -> client.consumeAsync(params, (result, purchaseToken) -> {
                     if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                         emitter.onSuccess(purchaseToken);
@@ -109,7 +113,7 @@ public class RxBilling {
                 }),
                 emitter::onError
             )
-        );
+        ));
     }
 
     private Completable tryConnect() {
@@ -134,5 +138,10 @@ public class RxBilling {
     private boolean areSubscriptionsSupported() {
         BillingResult result = client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS);
         return result.getResponseCode() == BillingClient.BillingResponseCode.OK;
+    }
+
+    public void dispose(){
+        purchaseListener.dispose();
+        disposable.clear();
     }
 }
