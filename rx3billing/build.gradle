@@ -1,0 +1,70 @@
+import java.text.SimpleDateFormat
+
+apply plugin: 'com.android.library'
+apply plugin: 'digital.wup.android-maven-publish'
+
+// Sources
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+}
+
+publishing {
+    publications {
+        mavenAar(MavenPublication) {
+            groupId = 'com.github.tdascoli'
+            artifactId = 'Rx3Billing'
+            version = "$project.version"
+            // Publish AAR
+            from components.android
+            // Publish sources
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.2"
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 30
+        versionCode createVersionCode()
+        versionName "$project.version"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+
+    implementation 'io.reactivex.rxjava3:rxjava:3.0.4'
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
+
+    implementation 'com.android.billingclient:billing:3.0.1'
+    implementation 'androidx.annotation:annotation:1.1.0'
+
+    testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
+
+def createVersionCode(){
+    def df = new SimpleDateFormat("yyMMddHHmm")
+    df.setTimeZone(TimeZone.getTimeZone("de_CH"))
+    def versionCode = df.format(new Date()).toInteger()
+    println "#### createVersionCode: " + versionCode + " ####"
+
+    return versionCode
+}
