@@ -11,7 +11,7 @@ This repository started as a personal usage of github user [hero](https://github
 
 ```groovy
 dependencies {
-  implementation 'com.github.tdascoli:Rx3Billing:1.0.0'
+  implementation 'com.github.tdascoli:Rx3Billing:1.0.1'
 }
 ```
 ```
