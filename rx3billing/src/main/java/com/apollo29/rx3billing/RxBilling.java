@@ -80,25 +80,20 @@ public class RxBilling {
     }
 
     public Single<List<SkuDetails>> getSkuDetails(List<String> skuList) {
-        return Single.create(emitter ->
-            disposable.add(tryConnect().subscribe(
-                () -> {
-                    SkuDetailsParams params = SkuDetailsParams.newBuilder()
-                        .setSkusList(skuList)
-                        .setType(BillingClient.SkuType.INAPP)
-                        .build();
+        return tryConnect().andThen(Single.create(emitter -> {
+            SkuDetailsParams params = SkuDetailsParams.newBuilder()
+                    .setSkusList(skuList)
+                    .setType(BillingClient.SkuType.INAPP)
+                    .build();
 
-                    client.querySkuDetailsAsync(params, (result, purchases) -> {
-                        if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                            emitter.onSuccess(purchases);
-                        } else {
-                            emitter.onError(new SkuDetailsFailureException(result.getResponseCode()));
-                        }
-                    });
-                },
-                emitter::onError
-            )
-        ));
+            client.querySkuDetailsAsync(params, (result, purchases) -> {
+                if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                    emitter.onSuccess(purchases);
+                } else {
+                    emitter.onError(new SkuDetailsFailureException(result.getResponseCode()));
+                }
+            });
+        }));
     }
 
     public Single<String> consume(ConsumeParams params) {
